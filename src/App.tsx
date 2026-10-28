@@ -15,10 +15,11 @@ import {
   AlertTriangle,
   RefreshCw,
   Search,
-  Sprout
+  Sprout,
+  Smartphone
 } from 'lucide-react';
 
-type Tab = 'overview' | 'diffs' | 'schema' | 'render' | 'sql';
+type Tab = 'overview' | 'diffs' | 'schema' | 'render' | 'sql' | 'flutter';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
@@ -348,6 +349,17 @@ psycopg2-binary==2.9.9`,
             >
               <Terminal className="w-4 h-4" />
               <span>SQL DDL & Queries</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('flutter')}
+              className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors flex items-center space-x-2 ${
+                activeTab === 'flutter'
+                  ? 'bg-stone-50 text-emerald-900 font-semibold shadow-sm'
+                  : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/50'
+              }`}
+            >
+              <Smartphone className="w-4 h-4" />
+              <span>Flutter App Connection</span>
             </button>
           </nav>
         </div>
@@ -797,7 +809,7 @@ psycopg2-binary==2.9.9`,
                       Copy the generated <code className="font-mono">API_KEY</code> from Render Web Service Environment settings, and test using curl:
                     </p>
                     <div className="bg-stone-900 text-stone-200 p-2.5 rounded font-mono text-xs mt-1.5 overflow-x-auto">
-                      curl -H "X-API-KEY: YOUR_RENDER_KEY" https://krishiapp-api.onrender.com/api/prices
+                      curl -H "X-API-KEY: YOUR_RENDER_KEY" https://krishiappbackend.onrender.com/api/prices
                     </div>
                   </div>
                 </div>
@@ -909,6 +921,313 @@ ON CONFLICT (name) DO UPDATE SET
     unit = EXCLUDED.unit,
     category = EXCLUDED.category;`}</pre>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: FLUTTER APP CONNECTION */}
+        {activeTab === 'flutter' && (
+          <div className="space-y-6">
+            {/* Overview Card */}
+            <div className="bg-white p-6 md:p-8 rounded-xl border border-stone-200 shadow-xs space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-stone-100">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                      Flutter + Dart
+                    </span>
+                    <span className="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                      Render Blueprint API
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-bold text-stone-900 mt-2">
+                    Connecting Your Existing Flutter App to Render
+                  </h2>
+                  <p className="text-stone-600 text-sm mt-1">
+                    Follow these 4 simple steps to point your Flutter client to the newly deployed Render backend service.
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <a
+                    href="https://dashboard.render.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center space-x-1.5 px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs font-medium transition-colors"
+                  >
+                    <span>Render Dashboard</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Step 1: Environment / Config File */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
+                    1
+                  </div>
+                  <h3 className="font-bold text-stone-900 text-sm">
+                    Configure <code className="font-mono text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded">lib/config/api_config.dart</code>
+                  </h3>
+                </div>
+                <p className="text-xs text-stone-600 pl-8">
+                  Create or update your API configuration file. Replace <code className="font-mono bg-stone-100 px-1 rounded">krishiapp-api.onrender.com</code> with your actual Render service URL and paste your generated <code className="font-mono bg-stone-100 px-1 rounded">API_KEY</code>:
+                </p>
+                <div className="ml-8 bg-stone-900 text-stone-100 rounded-lg p-4 font-mono text-xs overflow-x-auto relative">
+                  <button
+                    onClick={() => copyToClipboard(`// lib/config/api_config.dart
+class ApiConfig {
+  // Replace with your actual Render web service URL (without trailing slash)
+  static const String baseUrl = 'https://krishiappbackend.onrender.com/api';
+
+  // The API key auto-generated by Render blueprint (from Environment settings)
+  static const String apiKey = 'YOUR_RENDER_API_KEY';
+
+  // Render Free Tier sleep timeout: allow up to 60s for cold starts
+  static const Duration timeout = Duration(seconds: 45);
+
+  static Map<String, String> get headers => {
+    'Content-Type': 'application/json; charset=UTF-8',
+    'Accept': 'application/json',
+  };
+
+  static Map<String, String> get authHeaders => {
+    ...headers,
+    'X-API-KEY': apiKey,
+  };
+}`, 'flutter-config')}
+                    className="absolute top-3 right-3 text-stone-400 hover:text-white bg-stone-800 px-2 py-1 rounded text-xs flex items-center gap-1"
+                  >
+                    {copiedKey === 'flutter-config' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    <span>{copiedKey === 'flutter-config' ? 'Copied!' : 'Copy'}</span>
+                  </button>
+                  <pre>{`// lib/config/api_config.dart
+class ApiConfig {
+  // Replace with your actual Render web service URL (without trailing slash)
+  static const String baseUrl = 'https://krishiappbackend.onrender.com/api';
+
+  // The API key auto-generated by Render blueprint (from Environment settings)
+  static const String apiKey = 'YOUR_RENDER_API_KEY';
+
+  // Render Free Tier sleep timeout: allow up to 45s for initial cold start
+  static const Duration timeout = Duration(seconds: 45);
+
+  static Map<String, String> get headers => {
+    'Content-Type': 'application/json; charset=UTF-8',
+    'Accept': 'application/json',
+  };
+
+  static Map<String, String> get authHeaders => {
+    ...headers,
+    'X-API-KEY': apiKey,
+  };
+}`}</pre>
+                </div>
+              </div>
+
+              {/* Step 2: HTTP Service with UTF-8 Bengali Decoding */}
+              <div className="space-y-3 pt-4 border-t border-stone-100">
+                <div className="flex items-center space-x-2">
+                  <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
+                    2
+                  </div>
+                  <h3 className="font-bold text-stone-900 text-sm">
+                    Implement the API Service (<code className="font-mono text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded">lib/services/krishi_api_service.dart</code>)
+                  </h3>
+                </div>
+                <p className="text-xs text-stone-600 pl-8">
+                  Using <code className="font-mono bg-stone-100 px-1 rounded">package:http</code>. <span className="font-semibold text-emerald-900">Critical:</span> use <code className="font-mono bg-stone-100 px-1 rounded text-emerald-800">utf8.decode(response.bodyBytes)</code> so Bengali text is parsed cleanly without character corruption.
+                </p>
+                <div className="ml-8 bg-stone-900 text-stone-100 rounded-lg p-4 font-mono text-xs overflow-x-auto relative max-h-[380px]">
+                  <button
+                    onClick={() => copyToClipboard(`import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
+
+class KrishiApiService {
+  // 1. Fetch Prices (optional category filter)
+  static Future<List<Map<String, dynamic>>> fetchPrices({String? category}) async {
+    final uri = Uri.parse(category != null
+        ? '\${ApiConfig.baseUrl}/prices?category=\${Uri.encodeComponent(category)}'
+        : '\${ApiConfig.baseUrl}/prices');
+
+    final response = await http.get(uri, headers: ApiConfig.headers).timeout(ApiConfig.timeout);
+
+    if (response.statusCode == 200) {
+      // Decode with utf8.decode to preserve Bengali characters
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception('Failed to load prices: \${response.statusCode}');
+    }
+  }
+
+  // 2. Fetch Pesticides Guide (optional crop filter)
+  static Future<List<Map<String, dynamic>>> fetchPesticides({String? crop}) async {
+    final uri = Uri.parse(crop != null
+        ? '\${ApiConfig.baseUrl}/pesticides?crop=\${Uri.encodeComponent(crop)}'
+        : '\${ApiConfig.baseUrl}/pesticides');
+
+    final response = await http.get(uri, headers: ApiConfig.headers).timeout(ApiConfig.timeout);
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception('Failed to load pesticides: \${response.statusCode}');
+    }
+  }
+
+  // 3. Fetch Krishi Extension Offices
+  static Future<List<Map<String, dynamic>>> fetchOffices({String? district}) async {
+    final uri = Uri.parse(district != null
+        ? '\${ApiConfig.baseUrl}/krishi_offices?district=\${Uri.encodeComponent(district)}'
+        : '\${ApiConfig.baseUrl}/krishi_offices');
+
+    final response = await http.get(uri, headers: ApiConfig.headers).timeout(ApiConfig.timeout);
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception('Failed to load offices: \${response.statusCode}');
+    }
+  }
+
+  // 4. Update Single Price (Admin / Protected by X-API-KEY)
+  static Future<bool> updatePrice(String name, double newPrice) async {
+    final uri = Uri.parse('\${ApiConfig.baseUrl}/prices/\${Uri.encodeComponent(name)}');
+    final response = await http.patch(
+      uri,
+      headers: ApiConfig.authHeaders,
+      body: jsonEncode({'price': newPrice}),
+    ).timeout(ApiConfig.timeout);
+
+    return response.statusCode == 200;
+  }
+}`, 'flutter-service')}
+                    className="absolute top-3 right-3 text-stone-400 hover:text-white bg-stone-800 px-2 py-1 rounded text-xs flex items-center gap-1"
+                  >
+                    {copiedKey === 'flutter-service' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    <span>{copiedKey === 'flutter-service' ? 'Copied!' : 'Copy'}</span>
+                  </button>
+                  <pre>{`import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
+
+class KrishiApiService {
+  // 1. Fetch Prices (optional category filter)
+  static Future<List<Map<String, dynamic>>> fetchPrices({String? category}) async {
+    final uri = Uri.parse(category != null
+        ? '\${ApiConfig.baseUrl}/prices?category=\${Uri.encodeComponent(category)}'
+        : '\${ApiConfig.baseUrl}/prices');
+
+    final response = await http.get(uri, headers: ApiConfig.headers).timeout(ApiConfig.timeout);
+
+    if (response.statusCode == 200) {
+      // Decode with utf8.decode to preserve Bengali characters
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception('Failed to load prices: \${response.statusCode}');
+    }
+  }
+
+  // 2. Fetch Pesticides Guide (optional crop filter)
+  static Future<List<Map<String, dynamic>>> fetchPesticides({String? crop}) async {
+    final uri = Uri.parse(crop != null
+        ? '\${ApiConfig.baseUrl}/pesticides?crop=\${Uri.encodeComponent(crop)}'
+        : '\${ApiConfig.baseUrl}/pesticides');
+
+    final response = await http.get(uri, headers: ApiConfig.headers).timeout(ApiConfig.timeout);
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception('Failed to load pesticides: \${response.statusCode}');
+    }
+  }
+
+  // 3. Fetch Krishi Extension Offices
+  static Future<List<Map<String, dynamic>>> fetchOffices({String? district}) async {
+    final uri = Uri.parse(district != null
+        ? '\${ApiConfig.baseUrl}/krishi_offices?district=\${Uri.encodeComponent(district)}'
+        : '\${ApiConfig.baseUrl}/krishi_offices');
+
+    final response = await http.get(uri, headers: ApiConfig.headers).timeout(ApiConfig.timeout);
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception('Failed to load offices: \${response.statusCode}');
+    }
+  }
+
+  // 4. Update Single Price (Admin / Protected by X-API-KEY)
+  static Future<bool> updatePrice(String name, double newPrice) async {
+    final uri = Uri.parse('\${ApiConfig.baseUrl}/prices/\${Uri.encodeComponent(name)}');
+    final response = await http.patch(
+      uri,
+      headers: ApiConfig.authHeaders,
+      body: jsonEncode({'price': newPrice}),
+    ).timeout(ApiConfig.timeout);
+
+    return response.statusCode == 200;
+  }
+}`}</pre>
+                </div>
+              </div>
+
+              {/* Step 3: Handling Render Free Tier Cold-Starts in Flutter */}
+              <div className="space-y-3 pt-4 border-t border-stone-100">
+                <div className="flex items-center space-x-2">
+                  <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
+                    3
+                  </div>
+                  <h3 className="font-bold text-stone-900 text-sm">
+                    Handling Render Free Tier Cold Starts
+                  </h3>
+                </div>
+                <div className="ml-8 bg-amber-50 border border-amber-200 rounded-lg p-4 text-xs text-amber-900 space-y-2">
+                  <p className="font-semibold flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-700" />
+                    Render Free Tier Sleep Mode:
+                  </p>
+                  <p>
+                    On Render's free tier, the web service sleeps after 15 minutes of inactivity. The <strong>very first request</strong> after sleeping takes about <strong>30–50 seconds</strong> while the container boots up. Subsequent requests respond in milliseconds.
+                  </p>
+                  <p className="font-medium">Flutter Best Practices for Cold Starts:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Set the HTTP request timeout to at least <strong>45 seconds</strong>.</li>
+                    <li>Display a friendly loading indicator: <em>"সার্ভার চালু হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন..."</em> (Starting server, please wait...).</li>
+                    <li>Or add an initial ping to <code className="bg-amber-100 px-1 py-0.5 rounded font-mono">/api/health</code> when the app launches (e.g. in your Splash Screen) so the server is awake by the time the user reaches the main screen.</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Step 4: Network Permissions */}
+              <div className="space-y-3 pt-4 border-t border-stone-100">
+                <div className="flex items-center space-x-2">
+                  <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
+                    4
+                  </div>
+                  <h3 className="font-bold text-stone-900 text-sm">
+                    Android & iOS Permissions
+                  </h3>
+                </div>
+                <p className="text-xs text-stone-600 pl-8">
+                  Verify internet permission in <code className="font-mono bg-stone-100 px-1 rounded">android/app/src/main/AndroidManifest.xml</code>:
+                </p>
+                <div className="ml-8 bg-stone-900 text-stone-100 rounded-lg p-3 font-mono text-xs overflow-x-auto">
+                  <pre>{`<uses-permission android:name="android.permission.INTERNET"/>`}</pre>
+                </div>
+                <p className="text-xs text-stone-600 pl-8 mt-1">
+                  Render serves all traffic over trusted HTTPS with valid SSL certificates, so no plaintext HTTP or network security exceptions are needed.
+                </p>
+              </div>
+
             </div>
           </div>
         )}

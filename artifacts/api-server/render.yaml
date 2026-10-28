@@ -10,8 +10,9 @@ databases:
 
 services:
   - type: web
-    name: krishiapp-api
+    name: krishiappbackend
     runtime: python
+    rootDir: artifacts/api-server   # Point Render to this folder
     region: singapore
     plan: free          # upgrade to starter for always-on (free sleeps after 15min)
 
