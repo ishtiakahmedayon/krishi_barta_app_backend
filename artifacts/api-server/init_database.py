@@ -43,12 +43,17 @@ def init_db():
             id SERIAL PRIMARY KEY,
             name TEXT NOT NULL UNIQUE,
             name_possessive TEXT NOT NULL,
-            price NUMERIC(10, 2) NOT NULL,
+            price DOUBLE PRECISION NOT NULL,
             unit TEXT NOT NULL,
             category TEXT NOT NULL DEFAULT 'সবজি'
         )
         """
     )
+    # Ensure existing tables with NUMERIC are migrated to DOUBLE PRECISION
+    try:
+        cursor.execute("ALTER TABLE prices ALTER COLUMN price TYPE DOUBLE PRECISION USING price::DOUBLE PRECISION")
+    except Exception:
+        pass
 
     # -----------------------------------------------------------------------
     # pesticides table

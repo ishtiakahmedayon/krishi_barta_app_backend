@@ -16,6 +16,23 @@ prices_bp = Blueprint("prices", __name__)
 prices_bp.teardown_app_request(close_db)
 
 
+def format_price_row(row):
+    """
+    Ensure `price` is cast to a Python float so Flask's jsonify serializes it
+    as a JSON numeric (e.g. 30.0) instead of a JSON string (e.g. "30.00").
+    This prevents `type 'String' is not a subtype of type 'num'` errors in Dart/Flutter.
+    """
+    if row is None:
+        return None
+    d = dict(row)
+    if "price" in d and d["price"] is not None:
+        try:
+            d["price"] = float(d["price"])
+        except (ValueError, TypeError):
+            pass
+    return d
+
+
 @prices_bp.route("/api/prices", methods=["GET"])
 def list_prices():
     """
@@ -33,7 +50,7 @@ def list_prices():
         else:
             cur.execute("SELECT * FROM prices ORDER BY category, name")
         rows = cur.fetchall()
-    return jsonify(rows)
+    return jsonify([format_price_row(r) for r in rows])
 
 
 @prices_bp.route("/api/prices/categories", methods=["GET"])
@@ -55,7 +72,7 @@ def get_price(name):
         row = cur.fetchone()
     if row is None:
         return jsonify({"error": f"'{name}' নামে কোনো পণ্য পাওয়া যায়নি"}), 404
-    return jsonify(row)
+    return jsonify(format_price_row(row))
 
 
 @prices_bp.route("/api/prices/<path:name>", methods=["PATCH"])
@@ -83,7 +100,7 @@ def update_price(name):
         if cur.rowcount == 0:
             return jsonify({"error": f"'{name}' নামে কোনো পণ্য পাওয়া যায়নি"}), 404
     db.commit()
-    return jsonify({"status": "ok", "name": name, "price": price})
+    return jsonify({"status": "ok", "name": name, "price": float(price)})
 
 
 @prices_bp.route("/api/prices/bulk", methods=["POST"])
@@ -107,6 +124,10 @@ def bulk_update_prices():
     with db.cursor() as cur:
         for item in items:
             try:
+                # Ensure price is float
+                if "price" in item and item["price"] is not None:
+                    item["price"] = float(item["price"])
+
                 cur.execute(
                     """INSERT INTO prices (name, name_possessive, price, unit, category)
                        VALUES (%(name)s, %(name_possessive)s, %(price)s, %(unit)s, %(category)s)

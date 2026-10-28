@@ -11,6 +11,19 @@ from psycopg2.extras import RealDictCursor
 
 _pool = None
 
+# Automatically cast PostgreSQL NUMERIC/DECIMAL (OID 1700) to Python float
+# This ensures prices are serialized as JSON numbers (30.0) instead of JSON strings ("30.00")
+try:
+    import psycopg2.extensions
+    DEC2FLOAT = psycopg2.extensions.new_type(
+        psycopg2.extensions.DECIMAL.values,
+        'DEC2FLOAT',
+        lambda val, cur: float(val) if val is not None else None
+    )
+    psycopg2.extensions.register_type(DEC2FLOAT)
+except Exception:
+    pass
+
 
 def normalize_database_url(url: str) -> str:
     """Normalize legacy postgres:// prefix from Render to postgresql://."""
