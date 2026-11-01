@@ -1,6 +1,6 @@
 {
-  "summary":  "Executed migration of the KrishiApp Flask API to PostgreSQL on Render: fixed Vite dev server entry point, implemented psycopg2 connection pooling with DATABASE_URL in api/db.py, converted SQLite DDL to PostgreSQL SERIAL/NUMERIC in init_database.py, migrated SQL placeholders to %s and %(named)s across route blueprints, and updated render.yaml to provision Render PostgreSQL with automatic DATABASE_URL binding.",
-  "updatedAt":  "2026-10-28T08:19:05.408588449Z",
+  "summary":  "Executed Dynamic Prices and Automated Ingestion architecture: built api/ingestion.py with Bengali numeral normalizer, range parser, and CSV ingestion engine; updated api/prices.py with /upload-csv, /sync-scraper, /history, and /summary endpoints; migrated PostgreSQL schema with price_history table and seeded 7-day trend snapshots; and added an interactive Dynamic Prices & CSV Seeding console with SVG trend charts and normalizer playground to the frontend portal.",
+  "updatedAt":  "2026-11-01T02:49:38.648826582Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

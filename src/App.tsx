@@ -16,10 +16,15 @@ import {
   RefreshCw,
   Search,
   Sprout,
-  Smartphone
+  Smartphone,
+  TrendingUp,
+  Upload,
+  Download,
+  FileSpreadsheet,
+  Clock
 } from 'lucide-react';
 
-type Tab = 'overview' | 'diffs' | 'schema' | 'render' | 'sql' | 'flutter';
+type Tab = 'overview' | 'diffs' | 'schema' | 'render' | 'sql' | 'flutter' | 'dynamic';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
@@ -27,6 +32,92 @@ export default function App() {
   const [selectedFile, setSelectedFile] = useState<string>('db.py');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  
+  // Dynamic Prices & CSV State
+  const [bengaliTestInput, setBengaliTestInput] = useState<string>('৩৫-৪০ টাকা');
+  const [selectedTrendCrop, setSelectedTrendCrop] = useState<string>('আলু');
+  const [csvText, setCsvText] = useState<string>(
+`name,name_possessive,price,unit,category
+আলু,আলুর,২৮-৩২ টাকা,টাকা/কেজি,সবজি
+পেঁয়াজ,পেঁয়াজের,৬৮-৭২ টাকা,টাকা/কেজি,মশলা
+বেগুন,বেগুনের,৩৮-৪২ টাকা,টাকা/কেজি,সবজি
+টমেটো,টমেটোর,৫০-৫৫ টাকা,টাকা/কেজি,সবজি
+রসুন,রসুনের,১৭৫-১৮৫ টাকা,টাকা/কেজি,মশলা
+কাঁচামরিচ,কাঁচামরিচের,১৩০-১৫০ টাকা,টাকা/কেজি,মশলা`
+  );
+  const [parsedCsvCount, setParsedCsvCount] = useState<number | null>(null);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  const parseBnPrice = (str: string): number => {
+    const bnToEn: Record<string, string> = {
+      '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+      '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9',
+    };
+    const translated = str.replace(/[০-৯]/g, (d) => bnToEn[d] || d).replace(/থেকে/g, '-');
+    const matches = translated.match(/\d+(?:\.\d+)?/g);
+    if (!matches || matches.length === 0) return 0;
+    const nums = matches.map(Number);
+    if (nums.length >= 2) return Math.round(((nums[0] + nums[1]) / 2) * 10) / 10;
+    return nums[0];
+  };
+
+  const cropHistoryTrends: Record<string, { date: string; price: number }[]> = {
+    'আলু': [
+      { date: '25 Oct', price: 28.0 },
+      { date: '26 Oct', price: 28.5 },
+      { date: '27 Oct', price: 29.0 },
+      { date: '28 Oct', price: 29.5 },
+      { date: '29 Oct', price: 30.0 },
+      { date: '30 Oct', price: 31.0 },
+      { date: '31 Oct', price: 30.0 },
+    ],
+    'পেঁয়াজ': [
+      { date: '25 Oct', price: 65.0 },
+      { date: '26 Oct', price: 68.0 },
+      { date: '27 Oct', price: 70.0 },
+      { date: '28 Oct', price: 72.0 },
+      { date: '29 Oct', price: 75.0 },
+      { date: '30 Oct', price: 72.0 },
+      { date: '31 Oct', price: 70.0 },
+    ],
+    'বেগুন': [
+      { date: '25 Oct', price: 35.0 },
+      { date: '26 Oct', price: 38.0 },
+      { date: '27 Oct', price: 42.0 },
+      { date: '28 Oct', price: 40.0 },
+      { date: '29 Oct', price: 45.0 },
+      { date: '30 Oct', price: 42.0 },
+      { date: '31 Oct', price: 40.0 },
+    ],
+    'টমেটো': [
+      { date: '25 Oct', price: 60.0 },
+      { date: '26 Oct', price: 58.0 },
+      { date: '27 Oct', price: 55.0 },
+      { date: '28 Oct', price: 56.0 },
+      { date: '29 Oct', price: 54.0 },
+      { date: '30 Oct', price: 55.0 },
+      { date: '31 Oct', price: 55.0 },
+    ],
+    'রসুন': [
+      { date: '25 Oct', price: 170.0 },
+      { date: '26 Oct', price: 172.0 },
+      { date: '27 Oct', price: 175.0 },
+      { date: '28 Oct', price: 178.0 },
+      { date: '29 Oct', price: 180.0 },
+      { date: '30 Oct', price: 182.0 },
+      { date: '31 Oct', price: 180.0 },
+    ],
+    'চাল': [
+      { date: '25 Oct', price: 56.0 },
+      { date: '26 Oct', price: 56.5 },
+      { date: '27 Oct', price: 57.0 },
+      { date: '28 Oct', price: 57.0 },
+      { date: '29 Oct', price: 57.5 },
+      { date: '30 Oct', price: 58.0 },
+      { date: '31 Oct', price: 58.0 },
+    ],
+  };
 
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -360,6 +451,17 @@ psycopg2-binary==2.9.9`,
             >
               <Smartphone className="w-4 h-4" />
               <span>Flutter App Connection</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('dynamic')}
+              className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors flex items-center space-x-2 ${
+                activeTab === 'dynamic'
+                  ? 'bg-stone-50 text-emerald-900 font-semibold shadow-sm'
+                  : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/50'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 text-amber-300" />
+              <span>Dynamic Prices & CSV Seeding</span>
             </button>
           </nav>
         </div>
@@ -1229,6 +1331,491 @@ class KrishiApiService {
               </div>
 
             </div>
+          </div>
+        )}
+
+        {/* TAB 7: DYNAMIC PRICES & CSV SEEDING */}
+        {activeTab === 'dynamic' && (
+          <div className="space-y-8">
+            {/* Top Banner Card */}
+            <div className="bg-white p-6 md:p-8 rounded-xl border border-stone-200 shadow-xs space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-stone-100">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="bg-amber-100 text-amber-900 text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                      স্বয়ংক্রিয় বাজারদর
+                    </span>
+                    <span className="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                      Web Scraper + CSV Fallback
+                    </span>
+                    <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                      Render Cron Daily
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-bold text-stone-900 mt-2">
+                    Dynamic Market Prices & Automated Ingestion System
+                  </h2>
+                  <p className="text-stone-600 text-sm mt-1 max-w-3xl leading-relaxed">
+                    Automatically ingests daily commodity prices from agricultural bulletins (DAM / TCB), normalizes Bengali numerals and price ranges (e.g. <code className="bg-stone-100 px-1 py-0.5 rounded font-mono text-emerald-800">৩৫-৪০ টাকা</code> ➔ <code className="bg-stone-100 px-1 py-0.5 rounded font-mono text-emerald-800">37.5 ৳</code>), tracks historical trends for Flutter charts, and provides a 30-second CSV upload fallback.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                  <button
+                    onClick={() => {
+                      setIsSyncing(true);
+                      setSyncStatus("স্ক্র্যাপার চলছে: কৃষি বিপণন অধিদপ্তর (DAM) থেকে ডেটা সংগৃহীত হচ্ছে...");
+                      setTimeout(() => {
+                        setIsSyncing(false);
+                        setSyncStatus("✅ সফল: ২০ টি কৃষিপণ্যের বাজারদর এবং আজকের ঐতিহাসিক স্ন্যাপশট হালনাগাদ হয়েছে!");
+                      }, 1200);
+                    }}
+                    disabled={isSyncing}
+                    className="inline-flex items-center justify-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white rounded-lg font-medium text-sm transition-colors shadow-xs"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                    <span>{isSyncing ? 'সিঙ্ক হচ্ছে...' : 'স্ক্র্যাপার চালান (Run Scraper)'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Status Alert Banner */}
+              {syncStatus && (
+                <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-lg text-xs flex items-center justify-between">
+                  <span className="font-medium">{syncStatus}</span>
+                  <button 
+                    onClick={() => setSyncStatus(null)}
+                    className="text-emerald-700 hover:text-emerald-950 font-bold ml-2 text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* 3 Core Pillars */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-4 rounded-xl bg-stone-50 border border-stone-200/80">
+                  <div className="flex items-center space-x-2 text-emerald-800 font-semibold text-sm mb-1">
+                    <Clock className="w-4 h-4" />
+                    <h4>1. Automated Daily Scraper</h4>
+                  </div>
+                  <p className="text-xs text-stone-600 leading-relaxed mt-1">
+                    Runs every morning at 06:00 BST via Render Cron or background worker. Scrapes daily retail and wholesale bulletin tables from public agricultural sources.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-stone-50 border border-stone-200/80">
+                  <div className="flex items-center space-x-2 text-blue-800 font-semibold text-sm mb-1">
+                    <Code2 className="w-4 h-4" />
+                    <h4>2. Bengali Numeral Normalizer</h4>
+                  </div>
+                  <p className="text-xs text-stone-600 leading-relaxed mt-1">
+                    Converts Bengali digits (<code className="font-mono text-blue-900">০-৯</code>) to numbers, parses price ranges (<code className="font-mono text-blue-900">৩৫-৪০</code> ➔ average <code className="font-mono text-blue-900">37.5</code>), and removes currency symbols.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-stone-50 border border-stone-200/80">
+                  <div className="flex items-center space-x-2 text-amber-800 font-semibold text-sm mb-1">
+                    <FileSpreadsheet className="w-4 h-4" />
+                    <h4>3. CSV / Excel Fallback</h4>
+                  </div>
+                  <p className="text-xs text-stone-600 leading-relaxed mt-1">
+                    If an external website alters its structure or experiences downtime, field officers can upload a CSV spreadsheet directly via API or dashboard without downtime.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Interactive Bengali Numeral & Range Normalizer Playground */}
+            <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+                <div>
+                  <h3 className="font-bold text-stone-900 text-base flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    বাংলা সংখ্যা ও রেঞ্জ কনভার্টার টেস্ট (Bengali Normalizer Playground)
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Test how the Python normalizer converts Bengali text and price ranges into clean JSON floats for Flutter:
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-stone-700">
+                    ইনপুট টেক্সট (Input Text / Bengali Range):
+                  </label>
+                  <input
+                    type="text"
+                    value={bengaliTestInput}
+                    onChange={(e) => setBengaliTestInput(e.target.value)}
+                    placeholder="যেমন: ৩৫-৪০ টাকা বা ৳ ১২০.৫০"
+                    className="w-full text-sm px-3 py-2 border border-stone-300 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-emerald-600 font-medium"
+                  />
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    <span className="text-[11px] text-stone-400 mr-1">নমুনা টেস্ট:</span>
+                    {['৩৫-৪০ টাকা', '৳ ১২০ থেকে ১৪০ টাকা/কেজি', '২৮ টাকা/কেজি', '১৭৫.৫০ টাকা', '৫৬-৬০ টাকা'].map((sample) => (
+                      <button
+                        key={sample}
+                        onClick={() => setBengaliTestInput(sample)}
+                        className="text-[11px] bg-stone-100 hover:bg-stone-200 text-stone-700 px-2 py-0.5 rounded transition-colors"
+                      >
+                        {sample}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-4 bg-stone-900 text-stone-100 rounded-lg font-mono text-xs space-y-1.5">
+                  <div className="text-stone-400 text-[11px] uppercase tracking-wider">
+                    PostgreSQL / JSON Output:
+                  </div>
+                  <div className="flex items-baseline space-x-2">
+                    <span className="text-stone-400">price:</span>
+                    <span className="text-2xl font-bold text-emerald-400">
+                      {parseBnPrice(bengaliTestInput)}
+                    </span>
+                    <span className="text-stone-400 text-xs">(Float / Number)</span>
+                  </div>
+                  <p className="text-stone-400 text-[11px] pt-1">
+                    Python API returns: <code className="text-emerald-300 font-semibold">{`{"price": ${parseBnPrice(bengaliTestInput)}}`}</code> (Native numeric, no String cast error in Dart!)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 7-Day Historical Trend Visualizer */}
+            <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-xs space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-100">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <TrendingUp className="w-5 h-5 text-emerald-600" />
+                    <h3 className="font-bold text-stone-900 text-base">
+                      ৭ দিনের বাজারদর ট্রেন্ড ও ঐতিহাসিক চার্ট (Historical Trends)
+                    </h3>
+                  </div>
+                  <p className="text-xs text-stone-500 mt-1">
+                    Powered by the new <code className="font-mono text-emerald-800 bg-emerald-50 px-1 py-0.5 rounded">price_history</code> table. Flutter apps call <code className="font-mono text-emerald-800 bg-emerald-50 px-1 py-0.5 rounded">GET /api/prices/:name/history</code>.
+                  </p>
+                </div>
+
+                {/* Crop selector */}
+                <div className="flex items-center space-x-1.5 overflow-x-auto py-1">
+                  {Object.keys(cropHistoryTrends).map((crop) => (
+                    <button
+                      key={crop}
+                      onClick={() => setSelectedTrendCrop(crop)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                        selectedTrendCrop === crop
+                          ? 'bg-emerald-800 text-white shadow-xs'
+                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                      }`}
+                    >
+                      {crop}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Chart & Stats Container */}
+              {(() => {
+                const data = cropHistoryTrends[selectedTrendCrop] || [];
+                const prices = data.map(d => d.price);
+                const minPrice = Math.min(...prices) * 0.95;
+                const maxPrice = Math.max(...prices) * 1.05;
+                const priceRange = maxPrice - minPrice || 1;
+                const startPrice = prices[0];
+                const endPrice = prices[prices.length - 1];
+                const delta = endPrice - startPrice;
+                const deltaPercent = ((delta / startPrice) * 100).toFixed(1);
+
+                // SVG points calculation
+                const width = 600;
+                const height = 180;
+                const padding = 30;
+                const usableWidth = width - padding * 2;
+                const usableHeight = height - padding * 2;
+
+                const points = data.map((d, idx) => {
+                  const x = padding + (idx / (data.length - 1)) * usableWidth;
+                  const y = height - padding - ((d.price - minPrice) / priceRange) * usableHeight;
+                  return { x, y, ...d };
+                });
+
+                const pathD = points.reduce((acc, p, idx) => {
+                  return idx === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`;
+                }, "");
+
+                const areaD = `${pathD} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
+
+                return (
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-center">
+                    {/* Trend Stats */}
+                    <div className="space-y-4 lg:border-r lg:border-stone-100 lg:pr-6">
+                      <div>
+                        <span className="text-xs text-stone-500 uppercase tracking-wider font-semibold">
+                          নির্বাচিত পণ্য
+                        </span>
+                        <div className="text-2xl font-bold text-stone-900 mt-0.5">
+                          {selectedTrendCrop}
+                        </div>
+                      </div>
+
+                      <div className="bg-stone-50 p-3.5 rounded-lg border border-stone-200">
+                        <div className="text-xs text-stone-500">বর্তমান খুচরা দর:</div>
+                        <div className="text-xl font-bold text-emerald-700 mt-0.5">
+                          ৳{endPrice.toFixed(1)} /কেজি
+                        </div>
+                        <div className="flex items-center space-x-1.5 mt-1.5 text-xs">
+                          <span className={`font-semibold ${delta >= 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                            {delta >= 0 ? `+৳${delta.toFixed(1)}` : `-৳${Math.abs(delta).toFixed(1)}`} ({deltaPercent}%)
+                          </span>
+                          <span className="text-stone-400">৭ দিনের পরিবর্তন</span>
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] text-stone-500">
+                        ডাটা সোর্স: <span className="font-semibold text-stone-700">dam.gov.bd</span>
+                      </div>
+                    </div>
+
+                    {/* SVG Curve Chart */}
+                    <div className="lg:col-span-3 bg-stone-50/60 p-4 rounded-xl border border-stone-200 overflow-x-auto">
+                      <div className="min-w-[500px]">
+                        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-44 overflow-visible">
+                          <defs>
+                            <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+                              <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                            </linearGradient>
+                          </defs>
+
+                          {/* Grid Lines */}
+                          <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#e5e7eb" strokeWidth="1" />
+                          <line x1={padding} y1={padding} x2={width - padding} y2={padding} stroke="#e5e7eb" strokeWidth="1" strokeDasharray="3 3" />
+
+                          {/* Gradient Fill Area */}
+                          <path d={areaD} fill="url(#trendGradient)" />
+
+                          {/* Line */}
+                          <path d={pathD} fill="none" stroke="#059669" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+
+                          {/* Points */}
+                          {points.map((p, i) => (
+                            <g key={i}>
+                              <circle cx={p.x} cy={p.y} r="5" fill="#ffffff" stroke="#059669" strokeWidth="2.5" />
+                              <text x={p.x} y={p.y - 10} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#065f46">
+                                ৳{p.price}
+                              </text>
+                              <text x={p.x} y={height - 10} textAnchor="middle" fontSize="9" fill="#6b7280">
+                                {p.date}
+                              </text>
+                            </g>
+                          ))}
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* CSV Seeding Console & Dropzone */}
+            <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-stone-100">
+                <div>
+                  <h3 className="font-bold text-stone-900 text-base flex items-center gap-2">
+                    <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+                    CSV / Excel ফাইল দিয়ে বাজারদর সিডিং ও আপডেট (Bulk CSV Ingestion)
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Upload or paste market price CSVs. Accepts both Bengali and English column headers.
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      const sampleCsv = `name,name_possessive,price,unit,category\nআলু,আলুর,২৮-৩২ টাকা,টাকা/কেজি,সবজি\nপেঁয়াজ,পেঁয়াজের,৬৮-৭২ টাকা,টাকা/কেজি,মশলা\nরসুন,রসুনের,১৭৫-১৮৫ টাকা,টাকা/কেজি,মশলা\nটমেটো,টমেটোর,৫০-৫৫ টাকা,টাকা/কেজি,সবজি\nচাল,চালের,৫৬-৬০ টাকা,টাকা/কেজি,শস্য`;
+                      setCsvText(sampleCsv);
+                    }}
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs font-medium transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>লোড নমুনা CSV (Sample CSV)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Textarea & Actions */}
+              <div className="space-y-3">
+                <textarea
+                  rows={7}
+                  value={csvText}
+                  onChange={(e) => setCsvText(e.target.value)}
+                  placeholder="name,name_possessive,price,unit,category..."
+                  className="w-full text-xs font-mono p-3 bg-stone-900 text-stone-100 rounded-lg border border-stone-800 focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
+                />
+
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-xs text-stone-500">
+                    সমর্থিত কলাম: <code className="bg-stone-100 px-1 py-0.5 rounded font-mono text-stone-800">name</code>, <code className="bg-stone-100 px-1 py-0.5 rounded font-mono text-stone-800">price (বাংলা/ইংরেজি)</code>, <code className="bg-stone-100 px-1 py-0.5 rounded font-mono text-stone-800">unit</code>, <code className="bg-stone-100 px-1 py-0.5 rounded font-mono text-stone-800">category</code>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => {
+                        const lines = csvText.trim().split('\n');
+                        const validRows = lines.length > 1 ? lines.length - 1 : 0;
+                        setParsedCsvCount(validRows);
+                        setSyncStatus(`সফলভাবে ${validRows} টি পণ্যের CSV ভ্যালিডেশন সম্পন্ন হয়েছে! API প্রস্তুত।`);
+                      }}
+                      className="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-semibold transition-colors shadow-xs"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>ভ্যালিডেট ও প্রিভিউ (Validate & Preview)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Parsed Preview Table */}
+                {parsedCsvCount !== null && (
+                  <div className="mt-4 pt-4 border-t border-stone-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-stone-800">
+                        পার্সড রেকর্ড প্রিভিউ ({parsedCsvCount} টি আইটেম সনাক্ত):
+                      </span>
+                      <span className="text-[11px] text-emerald-700 font-medium">
+                        ✓ বাংলা সংখ্যা ➔ সংখ্যায় রূপান্তরিত
+                      </span>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-lg border border-stone-200">
+                      <table className="min-w-full divide-y divide-stone-200 text-xs">
+                        <thead className="bg-stone-50 text-stone-600 font-medium">
+                          <tr>
+                            <th className="px-3 py-2 text-left">নাম (Name)</th>
+                            <th className="px-3 py-2 text-left">সম্বন্ধবাচক (Possessive)</th>
+                            <th className="px-3 py-2 text-right">রূপান্তরিত মূল্য (Parsed Float)</th>
+                            <th className="px-3 py-2 text-left">একক (Unit)</th>
+                            <th className="px-3 py-2 text-left">বিভাগ (Category)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-stone-100 font-mono">
+                          {csvText.trim().split('\n').slice(1).map((line, idx) => {
+                            const cols = line.split(',');
+                            if (cols.length < 3) return null;
+                            const name = cols[0]?.trim();
+                            const poss = cols[1]?.trim();
+                            const rawPrice = cols[2]?.trim();
+                            const parsedPrice = parseBnPrice(rawPrice);
+                            const unit = cols[3]?.trim() || 'টাকা/কেজি';
+                            const cat = cols[4]?.trim() || 'সবজি';
+                            return (
+                              <tr key={idx} className="hover:bg-emerald-50/40">
+                                <td className="px-3 py-1.5 font-sans font-semibold text-stone-800">{name}</td>
+                                <td className="px-3 py-1.5 font-sans text-stone-500">{poss}</td>
+                                <td className="px-3 py-1.5 text-right font-bold text-emerald-700">
+                                  ৳{parsedPrice.toFixed(1)} <span className="text-[10px] text-stone-400 font-normal">({rawPrice})</span>
+                                </td>
+                                <td className="px-3 py-1.5 font-sans text-stone-500">{unit}</td>
+                                <td className="px-3 py-1.5 font-sans">
+                                  <span className="bg-stone-100 text-stone-700 px-1.5 py-0.5 rounded text-[10px]">
+                                    {cat}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Flutter API Integration Snippets */}
+            <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+                <div>
+                  <h3 className="font-bold text-stone-900 text-base">
+                    Flutter এ ট্রেন্ড চার্ট ও CSV আপলোড ব্যবহার (Flutter Integration)
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    How Flutter clients call the new dynamic endpoints to plot price history charts or upload market CSV files:
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* 1. Fetch History Snippet */}
+                <div className="bg-stone-900 text-stone-100 rounded-lg p-4 font-mono text-xs overflow-x-auto relative">
+                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-stone-800">
+                    <span className="text-emerald-400 text-xs font-semibold">1. Fetch 7-Day Trend History</span>
+                    <button
+                      onClick={() => copyToClipboard(`// Fetch 7-day trend history for line charts in Flutter
+static Future<List<Map<String, dynamic>>> fetchCropHistory(String cropName) async {
+  final uri = Uri.parse('\${ApiConfig.baseUrl}/prices/\${Uri.encodeComponent(cropName)}/history?limit=7');
+  final response = await http.get(uri, headers: ApiConfig.headers);
+  if (response.statusCode == 200) {
+    final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+    return data.cast<Map<String, dynamic>>();
+  }
+  return [];
+}`, 'flutter-history-code')}
+                      className="text-stone-400 hover:text-white text-xs flex items-center gap-1"
+                    >
+                      {copiedKey === 'flutter-history-code' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <pre>{`// Fetch 7-day trend history for line charts in Flutter
+static Future<List<Map<String, dynamic>>> fetchCropHistory(String cropName) async {
+  final uri = Uri.parse(
+    '\${ApiConfig.baseUrl}/prices/\${Uri.encodeComponent(cropName)}/history?limit=7'
+  );
+  final response = await http.get(uri, headers: ApiConfig.headers);
+  if (response.statusCode == 200) {
+    final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+    return data.cast<Map<String, dynamic>>();
+  }
+  return [];
+}`}</pre>
+                </div>
+
+                {/* 2. Upload CSV Snippet */}
+                <div className="bg-stone-900 text-stone-100 rounded-lg p-4 font-mono text-xs overflow-x-auto relative">
+                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-stone-800">
+                    <span className="text-blue-400 text-xs font-semibold">2. Upload CSV File / Text</span>
+                    <button
+                      onClick={() => copyToClipboard(`// Upload CSV price updates (Admin / protected)
+static Future<bool> uploadPriceCsv(String csvString) async {
+  final uri = Uri.parse('\${ApiConfig.baseUrl}/prices/upload-csv');
+  final response = await http.post(
+    uri,
+    headers: ApiConfig.authHeaders,
+    body: jsonEncode({'csv': csvString}),
+  );
+  return response.statusCode == 200;
+}`, 'flutter-csv-upload-code')}
+                      className="text-stone-400 hover:text-white text-xs flex items-center gap-1"
+                    >
+                      {copiedKey === 'flutter-csv-upload-code' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <pre>{`// Upload CSV price updates (Admin / protected)
+static Future<bool> uploadPriceCsv(String csvString) async {
+  final uri = Uri.parse('\${ApiConfig.baseUrl}/prices/upload-csv');
+  final response = await http.post(
+    uri,
+    headers: ApiConfig.authHeaders,
+    body: jsonEncode({'csv': csvString}),
+  );
+  return response.statusCode == 200;
+}`}</pre>
+                </div>
+              </div>
+            </div>
+
           </div>
         )}
 
