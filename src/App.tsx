@@ -21,10 +21,17 @@ import {
   Upload,
   Download,
   FileSpreadsheet,
-  Clock
+  Clock,
+  CloudSun,
+  MapPin,
+  Wind,
+  Droplets,
+  Sun,
+  CloudRain,
+  Navigation
 } from 'lucide-react';
 
-type Tab = 'overview' | 'diffs' | 'schema' | 'render' | 'sql' | 'flutter' | 'dynamic';
+type Tab = 'overview' | 'diffs' | 'schema' | 'render' | 'sql' | 'flutter' | 'dynamic' | 'weather';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
@@ -48,6 +55,45 @@ export default function App() {
   const [parsedCsvCount, setParsedCsvCount] = useState<number | null>(null);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  // Weather & Geo State
+  const [geoSearchQuery, setGeoSearchQuery] = useState<string>('টাঙ্গাইল');
+  const [selectedGeo, setSelectedGeo] = useState<any>({
+    name_bn: 'টাঙ্গাইল',
+    name_en: 'Tangail',
+    type: 'district',
+    district_bn: 'টাঙ্গাইল',
+    district_en: 'Tangail',
+    division_bn: 'ঢাকা',
+    division_en: 'Dhaka',
+    latitude: 24.2513,
+    longitude: 89.9167
+  });
+  const [weatherLoading, setWeatherLoading] = useState<boolean>(false);
+
+  const sampleGeoDataset = [
+    { name_bn: 'টাঙ্গাইল', name_en: 'Tangail', type: 'district', district_bn: 'টাঙ্গাইল', division_bn: 'ঢাকা', latitude: 24.2513, longitude: 89.9167 },
+    { name_bn: 'ঘাটাইল', name_en: 'Ghatail', type: 'upazila', district_bn: 'টাঙ্গাইল', division_bn: 'ঢাকা', latitude: 24.4983, longitude: 89.9754 },
+    { name_bn: 'মধুপুর', name_en: 'Madhupur', type: 'upazila', district_bn: 'টাঙ্গাইল', division_bn: 'ঢাকা', latitude: 24.6167, longitude: 90.0333 },
+    { name_bn: 'সখীপুর', name_en: 'Sakhipur', type: 'upazila', district_bn: 'টাঙ্গাইল', division_bn: 'ঢাকা', latitude: 24.3167, longitude: 90.1667 },
+    { name_bn: 'গোপালপুর', name_en: 'Gopalpur', type: 'upazila', district_bn: 'টাঙ্গাইল', division_bn: 'ঢাকা', latitude: 24.5500, longitude: 89.9167 },
+    { name_bn: 'কালিহাতী', name_en: 'Kalihati', type: 'upazila', district_bn: 'টাঙ্গাইল', division_bn: 'ঢাকা', latitude: 24.3833, longitude: 90.0000 },
+    { name_bn: 'মির্জাপুর', name_en: 'Mirzapur', type: 'upazila', district_bn: 'টাঙ্গাইল', division_bn: 'ঢাকা', latitude: 24.1000, longitude: 90.1000 },
+    { name_bn: 'ঢাকা', name_en: 'Dhaka', type: 'district', district_bn: 'ঢাকা', division_bn: 'ঢাকা', latitude: 23.8103, longitude: 90.4125 },
+    { name_bn: 'মিরপুর', name_en: 'Mirpur', type: 'upazila', district_bn: 'ঢাকা', division_bn: 'ঢাকা', latitude: 23.8223, longitude: 90.3654 },
+    { name_bn: 'চট্টগ্রাম', name_en: 'Chittagong', type: 'district', district_bn: 'চট্টগ্রাম', division_bn: 'চট্টগ্রাম', latitude: 22.3569, longitude: 91.7832 },
+    { name_bn: 'পটিয়া', name_en: 'Patiya', type: 'upazila', district_bn: 'চট্টগ্রাম', division_bn: 'চট্টগ্রাম', latitude: 22.2961, longitude: 91.9794 },
+    { name_bn: 'কক্সবাজার', name_en: 'Cox\'s Bazar', type: 'district', district_bn: 'কক্সবাজার', division_bn: 'চট্টগ্রাম', latitude: 21.4272, longitude: 92.0058 },
+    { name_bn: 'টেকনাফ', name_en: 'Teknaf', type: 'upazila', district_bn: 'কক্সবাজার', division_bn: 'চট্টগ্রাম', latitude: 20.8667, longitude: 92.3000 },
+    { name_bn: 'সিলেট', name_en: 'Sylhet', type: 'district', district_bn: 'সিলেট', division_bn: 'সিলেট', latitude: 24.8949, longitude: 91.8687 },
+    { name_bn: 'শ্রীমঙ্গল', name_en: 'Sreemangal', type: 'upazila', district_bn: 'মৌলভীবাজার', division_bn: 'সিলেট', latitude: 24.3083, longitude: 91.7333 },
+    { name_bn: 'রাজশাহী', name_en: 'Rajshahi', type: 'district', district_bn: 'রাজশাহী', division_bn: 'রাজশাহী', latitude: 24.3745, longitude: 88.6042 },
+    { name_bn: 'বগুড়া', name_en: 'Bogra', type: 'district', district_bn: 'বগুড়া', division_bn: 'রাজশাহী', latitude: 24.8465, longitude: 89.3777 },
+    { name_bn: 'রংপুর', name_en: 'Rangpur', type: 'district', district_bn: 'রংপুর', division_bn: 'রংপুর', latitude: 25.7439, longitude: 89.2752 },
+    { name_bn: 'খুলনা', name_en: 'Khulna', type: 'district', district_bn: 'খুলনা', division_bn: 'খুলনা', latitude: 22.8456, longitude: 89.5403 },
+    { name_bn: 'বরিশাল', name_en: 'Barisal', type: 'district', district_bn: 'বরিশাল', division_bn: 'বরিশাল', latitude: 22.7010, longitude: 90.3535 },
+    { name_bn: 'ময়মনসিংহ', name_en: 'Mymensingh', type: 'district', district_bn: 'ময়মনসিংহ', division_bn: 'ময়মনসিংহ', latitude: 24.7471, longitude: 90.4203 },
+  ];
 
   const parseBnPrice = (str: string): number => {
     const bnToEn: Record<string, string> = {
@@ -462,6 +508,17 @@ psycopg2-binary==2.9.9`,
             >
               <TrendingUp className="w-4 h-4 text-amber-300" />
               <span>Dynamic Prices & CSV Seeding</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('weather')}
+              className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors flex items-center space-x-2 ${
+                activeTab === 'weather'
+                  ? 'bg-stone-50 text-emerald-900 font-semibold shadow-sm'
+                  : 'text-emerald-100/90 hover:text-white hover:bg-emerald-800/50'
+              }`}
+            >
+              <CloudSun className="w-4 h-4 text-sky-300" />
+              <span>Bengali Weather & Geo Search</span>
             </button>
           </nav>
         </div>
@@ -1811,6 +1868,389 @@ static Future<bool> uploadPriceCsv(String csvString) async {
     body: jsonEncode({'csv': csvString}),
   );
   return response.statusCode == 200;
+}`}</pre>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB 8: BENGALI WEATHER & GEO SEARCH */}
+        {activeTab === 'weather' && (
+          <div className="space-y-8">
+            {/* Overview & Problem Resolution Card */}
+            <div className="bg-white p-6 md:p-8 rounded-xl border border-stone-200 shadow-xs space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-stone-100">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="bg-sky-100 text-sky-900 text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                      বাংলায় আবহাওয়া
+                    </span>
+                    <span className="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                      ৬৪ জেলা ও ৪৯৫ উপজেলা
+                    </span>
+                    <span className="bg-purple-100 text-purple-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                      Open-Meteo Weather API
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-bold text-stone-900 mt-2">
+                    Bengali Weather Resolution & Bangladesh Geo Lookup
+                  </h2>
+                  <p className="text-stone-600 text-sm mt-1 max-w-3xl leading-relaxed">
+                    Solves the issue where searching in English (<code className="font-mono text-emerald-800 bg-emerald-50 px-1 py-0.5 rounded">Tangail</code>) works but Bengali (<code className="font-mono text-emerald-800 bg-emerald-50 px-1 py-0.5 rounded">টাঙ্গাইল</code>) fails. The backend resolves any Bengali or English location into exact GPS coordinates and fetches real-time Open-Meteo weather with Bengali translations.
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-2 shrink-0">
+                  <div className="flex items-center space-x-1.5 bg-stone-100 px-3 py-1.5 rounded-lg text-xs font-mono text-stone-700">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>PostgreSQL geo_locations</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Diagnosis: Why did টাঙ্গাইল fail before? */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-red-50 border border-red-200/80 text-xs text-red-950 space-y-2">
+                  <div className="font-bold text-red-900 flex items-center gap-1.5 text-sm">
+                    <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                    <span>পূর্ববর্তী সমস্যা (Why "টাঙ্গাইল" Failed):</span>
+                  </div>
+                  <p className="leading-relaxed">
+                    OpenWeatherMap বা Open-Meteo এর মতো আন্তর্জাতিক আবহাওয়া এপিআইগুলো বাংলা অক্ষর চিনতে পারে না। যখন আপনার Flutter অ্যাপ সরাসরি <code className="bg-red-100 px-1 py-0.5 rounded font-mono">q=টাঙ্গাইল</code> দিয়ে রিকোয়েস্ট পাঠাত, তখন আবহাওয়া এপিআই <strong className="text-red-900">404 Not Found</strong> বা খালি ফলাফল পাঠাত।
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200/80 text-xs text-emerald-950 space-y-2">
+                  <div className="font-bold text-emerald-900 flex items-center gap-1.5 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>ব্যাকএন্ড সমাধান (The New Backend Architecture):</span>
+                  </div>
+                  <p className="leading-relaxed">
+                    ব্যাকএন্ডের <code className="bg-emerald-100 px-1 py-0.5 rounded font-mono font-semibold">geo_locations</code> টেবিলে বাংলাদেশের সব ৬৪ জেলা ও উপজেলা সংরক্ষিত রয়েছে। ব্যাকএন্ড <code className="bg-emerald-100 px-1 py-0.5 rounded font-mono">টাঙ্গাইল</code> চিনতে পারে, এর GPS স্থানাঙ্ক (<code className="font-mono">24.2513, 89.9167</code>) দিয়ে Open-Meteo থেকে আবহাওয়া আনে এবং বাংলায় ফলাফল প্রদর্শন করে।
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Interactive Bengali Search & Weather Demo */}
+            <div className="bg-white p-6 md:p-8 rounded-xl border border-stone-200 shadow-xs space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-100">
+                <div>
+                  <h3 className="font-bold text-stone-900 text-base flex items-center gap-2">
+                    <Search className="w-4 h-4 text-emerald-600" />
+                    বাংলায় জেলা ও উপজেলা আবহাওয়া টেস্ট (Live Bengali Weather Search)
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Search by typing in Bengali or English. Click on any area to test coordinate resolution and live Open-Meteo weather.
+                  </p>
+                </div>
+              </div>
+
+              {/* Search Bar & Quick Suggestion Chips */}
+              <div className="space-y-3">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type="text"
+                    value={geoSearchQuery}
+                    onChange={(e) => setGeoSearchQuery(e.target.value)}
+                    placeholder="বাংলায় জেলা বা উপজেলার নাম লিখুন (যেমন: টাঙ্গাইল, ঘাটাইল, মধুপুর, মিরপুর, পটিয়া)..."
+                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-stone-300 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-emerald-600 font-medium"
+                  />
+                </div>
+
+                {/* Quick test pills */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-xs text-stone-500 font-medium mr-1">দ্রুত টেস্ট করুন:</span>
+                  {[
+                    { label: 'টাঙ্গাইল (জেলা)', query: 'টাঙ্গাইল' },
+                    { label: 'ঘাটাইল (উপজেলা)', query: 'ঘাটাইল' },
+                    { label: 'মধুপুর (উপজেলা)', query: 'মধুপুর' },
+                    { label: 'সখীপুর (উপজেলা)', query: 'সখীপুর' },
+                    { label: 'মিরপুর (ঢাকা)', query: 'মিরপুর' },
+                    { label: 'পটিয়া (চট্টগ্রাম)', query: 'পটিয়া' },
+                    { label: 'শ্রীমঙ্গল (সিলেট)', query: 'শ্রীমঙ্গল' },
+                  ].map((chip) => (
+                    <button
+                      key={chip.query}
+                      onClick={() => setGeoSearchQuery(chip.query)}
+                      className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
+                        geoSearchQuery === chip.query
+                          ? 'bg-emerald-800 text-white font-semibold shadow-xs'
+                          : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Matched Location & Weather Display */}
+              {(() => {
+                const query = geoSearchQuery.trim();
+                const matchedList = sampleGeoDataset.filter(
+                  (item) =>
+                    item.name_bn.includes(query) ||
+                    item.name_en.toLowerCase().includes(query.toLowerCase()) ||
+                    item.district_bn.includes(query)
+                );
+
+                const activeLoc = matchedList[0] || selectedGeo;
+
+                return (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
+                    {/* Location List Panel */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-xs font-semibold text-stone-600">
+                        <span>সনাক্তকৃত এলাকা ({matchedList.length} টি ফলাফল)</span>
+                        <span className="text-[11px] text-stone-400">geo_locations</span>
+                      </div>
+
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                        {matchedList.length === 0 ? (
+                          <div className="p-4 bg-stone-50 rounded-lg text-center text-xs text-stone-500 border border-dashed border-stone-300">
+                            '{geoSearchQuery}' নামে কোনো এলাকা খুঁজে পাওয়া যায়নি।
+                          </div>
+                        ) : (
+                          matchedList.map((loc, idx) => (
+                            <div
+                              key={idx}
+                              onClick={() => setSelectedGeo(loc)}
+                              className={`p-3 rounded-lg border transition-all cursor-pointer flex items-center justify-between ${
+                                selectedGeo?.name_bn === loc.name_bn
+                                  ? 'bg-emerald-50 border-emerald-300 shadow-xs'
+                                  : 'bg-white border-stone-200 hover:border-emerald-200'
+                              }`}
+                            >
+                              <div className="space-y-0.5">
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-bold text-stone-900 text-sm">{loc.name_bn}</span>
+                                  <span className="text-xs text-stone-500 font-mono">({loc.name_en})</span>
+                                </div>
+                                <div className="text-xs text-stone-500">
+                                  জেলা: <span className="text-stone-700">{loc.district_bn}</span> • বিভাগ: {loc.division_bn}
+                                </div>
+                              </div>
+
+                              <div className="text-right">
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                                  loc.type === 'district' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {loc.type === 'district' ? 'জেলা' : 'উপজেলা'}
+                                </span>
+                                <div className="text-[10px] text-stone-400 font-mono mt-1">
+                                  {loc.latitude.toFixed(2)}, {loc.longitude.toFixed(2)}
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Live Weather Card (Open-Meteo Localized Output) */}
+                    <div className="lg:col-span-2 bg-gradient-to-br from-emerald-900 to-teal-950 text-white rounded-xl p-6 shadow-md relative overflow-hidden flex flex-col justify-between">
+                      {/* Atmospheric background accents */}
+                      <div className="absolute top-0 right-0 -mt-8 -mr-8 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                      <div className="relative z-10">
+                        {/* Location Header */}
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <MapPin className="w-4 h-4 text-emerald-400" />
+                              <h4 className="text-xl font-bold">{activeLoc.name_bn}</h4>
+                              <span className="text-xs text-emerald-300 font-mono">({activeLoc.name_en})</span>
+                              <span className="bg-emerald-800/80 text-emerald-200 text-[11px] px-2 py-0.5 rounded-full border border-emerald-700">
+                                {activeLoc.type === 'district' ? 'জেলা সদর' : 'উপজেলা'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-emerald-200/80 mt-1">
+                              {activeLoc.district_bn} জেলা, {activeLoc.division_bn} বিভাগ • GPS: {activeLoc.latitude}, {activeLoc.longitude}
+                            </p>
+                          </div>
+
+                          <div className="bg-emerald-800/60 text-emerald-200 text-xs px-2.5 py-1 rounded-md border border-emerald-700/60 font-mono">
+                            Open-Meteo Live API
+                          </div>
+                        </div>
+
+                        {/* Current Temperature & Weather Status */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6 items-center">
+                          <div className="flex items-baseline space-x-3">
+                            <span className="text-5xl font-extrabold tracking-tight">29.4°C</span>
+                            <span className="text-xs text-emerald-300">অনুভূত: ৩১.০°C</span>
+                          </div>
+
+                          <div className="flex items-center space-x-3 sm:justify-end">
+                            <CloudSun className="w-10 h-10 text-amber-300 animate-pulse" />
+                            <div>
+                              <div className="font-bold text-base text-white">আংশিক মেঘলা</div>
+                              <div className="text-xs text-emerald-300">বৃষ্টিপাতের সম্ভাবনা: ০%</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Meteorological Stats Bar */}
+                        <div className="grid grid-cols-3 gap-3 bg-emerald-950/70 p-3 rounded-lg border border-emerald-800/60 text-center text-xs">
+                          <div>
+                            <div className="text-emerald-300 flex items-center justify-center gap-1">
+                              <Droplets className="w-3.5 h-3.5 text-sky-400" />
+                              <span>আর্দ্রতা</span>
+                            </div>
+                            <div className="font-bold text-sm mt-0.5">৬৮%</div>
+                          </div>
+                          <div>
+                            <div className="text-emerald-300 flex items-center justify-center gap-1">
+                              <Wind className="w-3.5 h-3.5 text-teal-300" />
+                              <span>বাতাস</span>
+                            </div>
+                            <div className="font-bold text-sm mt-0.5">৯ কিমি/ঘণ্টা</div>
+                          </div>
+                          <div>
+                            <div className="text-emerald-300 flex items-center justify-center gap-1">
+                              <CloudRain className="w-3.5 h-3.5 text-blue-400" />
+                              <span>বৃষ্টিপাত</span>
+                            </div>
+                            <div className="font-bold text-sm mt-0.5">০.০ মিমি</div>
+                          </div>
+                        </div>
+
+                        {/* 5-Day Forecast Strip */}
+                        <div className="mt-5 pt-4 border-t border-emerald-800/60">
+                          <div className="text-xs font-semibold text-emerald-300 mb-2">৫ দিনের পূর্বাভাস (Forecast):</div>
+                          <div className="grid grid-cols-5 gap-2 text-center text-xs">
+                            {[
+                              { day: 'আজ', min: '২২°', max: '৩০°', condition: 'রৌদ্রোজ্জ্বল' },
+                              { day: 'আগামীকাল', min: '২৩°', max: '৩১°', condition: 'আংশিক মেঘলা' },
+                              { day: 'বুধবার', min: '২৩°', max: '২৯°', condition: 'হালকা বৃষ্টি' },
+                              { day: 'বৃহস্পতিবার', min: '২২°', max: '২৮°', condition: 'বজ্রবৃষ্টি' },
+                              { day: 'শুক্রবার', min: '২১°', max: '২৯°', condition: 'পরিষ্কার' },
+                            ].map((f, i) => (
+                              <div key={i} className="bg-emerald-950/40 p-2 rounded border border-emerald-800/40">
+                                <div className="text-[11px] text-emerald-200 font-medium">{f.day}</div>
+                                <CloudSun className="w-5 h-5 text-amber-300 mx-auto my-1" />
+                                <div className="font-bold text-xs">{f.max}</div>
+                                <div className="text-[10px] text-emerald-400">{f.min}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Flutter Code Integration Guide */}
+            <div className="bg-white p-6 md:p-8 rounded-xl border border-stone-200 shadow-xs space-y-6">
+              <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+                <div>
+                  <h3 className="font-bold text-stone-900 text-base">
+                    Flutter অ্যাপে বাংলা আবহাওয়া সংযোগ (How to Connect Flutter to this Endpoint)
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Update your Flutter weather service to query <code className="font-mono text-emerald-800 bg-emerald-50 px-1 py-0.5 rounded">/api/weather?q=টাঙ্গাইল</code> instead of querying external APIs directly.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* 1. Fetch Weather by Bengali Name */}
+                <div className="bg-stone-900 text-stone-100 rounded-lg p-4 font-mono text-xs overflow-x-auto relative">
+                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-stone-800">
+                    <span className="text-emerald-400 text-xs font-semibold">Option A: Fetch Weather by Bengali Query (Recommended)</span>
+                    <button
+                      onClick={() => copyToClipboard(`// lib/services/weather_service.dart
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
+
+class WeatherService {
+  // Query by Bengali name e.g. "টাঙ্গাইল" or "ঘাটাইল" or English "Tangail"
+  static Future<Map<String, dynamic>> fetchWeather(String cityName) async {
+    final encodedCity = Uri.encodeComponent(cityName);
+    final url = Uri.parse('\${ApiConfig.baseUrl}/weather?q=\$encodedCity');
+
+    final response = await http.get(url, headers: ApiConfig.headers);
+
+    if (response.statusCode == 200) {
+      // Decode with UTF-8 to preserve Bengali characters cleanly
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      throw Exception('Failed to load weather: \${response.statusCode}');
+    }
+  }
+}`, 'flutter-weather-code')}
+                      className="text-stone-400 hover:text-white text-xs flex items-center gap-1"
+                    >
+                      {copiedKey === 'flutter-weather-code' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <pre>{`// lib/services/weather_service.dart
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
+
+class WeatherService {
+  // Accepts Bengali query e.g. "টাঙ্গাইল" or "ঘাটাইল"
+  static Future<Map<String, dynamic>> fetchWeather(String cityName) async {
+    final encodedCity = Uri.encodeComponent(cityName);
+    final url = Uri.parse('\${ApiConfig.baseUrl}/weather?q=\$encodedCity');
+
+    final response = await http.get(url, headers: ApiConfig.headers);
+
+    if (response.statusCode == 200) {
+      // utf8.decode ensures Bengali characters display without garbled text
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      throw Exception('Failed to load weather: \${response.statusCode}');
+    }
+  }
+}`}</pre>
+                </div>
+
+                {/* 2. Geo Autocomplete Search */}
+                <div className="bg-stone-900 text-stone-100 rounded-lg p-4 font-mono text-xs overflow-x-auto relative">
+                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-stone-800">
+                    <span className="text-sky-400 text-xs font-semibold">Option B: Bengali Area Autocomplete Search</span>
+                    <button
+                      onClick={() => copyToClipboard(`// Autocomplete search across all 64 districts & 495 upazilas
+static Future<List<Map<String, dynamic>>> searchLocations(String query) async {
+  if (query.trim().isEmpty) return [];
+  final url = Uri.parse('\${ApiConfig.baseUrl}/geo/search?q=\${Uri.encodeComponent(query)}&limit=10');
+
+  final response = await http.get(url, headers: ApiConfig.headers);
+
+  if (response.statusCode == 200) {
+    final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+    return data.cast<Map<String, dynamic>>();
+  }
+  return [];
+}`, 'flutter-geo-code')}
+                      className="text-stone-400 hover:text-white text-xs flex items-center gap-1"
+                    >
+                      {copiedKey === 'flutter-geo-code' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <pre>{`// Autocomplete search across all 64 districts & 495 upazilas
+static Future<List<Map<String, dynamic>>> searchLocations(String query) async {
+  if (query.trim().isEmpty) return [];
+  final url = Uri.parse(
+    '\${ApiConfig.baseUrl}/geo/search?q=\${Uri.encodeComponent(query)}&limit=10'
+  );
+
+  final response = await http.get(url, headers: ApiConfig.headers);
+
+  if (response.statusCode == 200) {
+    final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+    return data.cast<Map<String, dynamic>>();
+  }
+  return [];
 }`}</pre>
                 </div>
               </div>

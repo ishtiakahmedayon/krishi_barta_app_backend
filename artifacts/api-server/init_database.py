@@ -114,6 +114,28 @@ def init_db():
         """
     )
 
+    # -----------------------------------------------------------------------
+    # geo_locations table (all 64 districts & 495 upazilas with GPS coordinates)
+    # -----------------------------------------------------------------------
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS geo_locations (
+            id SERIAL PRIMARY KEY,
+            name_bn TEXT NOT NULL,
+            name_en TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT 'upazila',
+            district_bn TEXT NOT NULL,
+            district_en TEXT NOT NULL,
+            division_bn TEXT NOT NULL,
+            division_en TEXT NOT NULL,
+            latitude DOUBLE PRECISION NOT NULL,
+            longitude DOUBLE PRECISION NOT NULL
+        )
+        """
+    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_geo_locations_bn ON geo_locations(name_bn)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_geo_locations_en ON geo_locations(LOWER(name_en))")
+
     conn.commit()
 
     # -----------------------------------------------------------------------
@@ -258,6 +280,28 @@ def init_db():
         )
         conn.commit()
         print(f"✅ Seeded {len(offices)} offices into PostgreSQL")
+
+    # -----------------------------------------------------------------------
+    # Seed geo_locations (All 64 districts and all upazilas with coordinates)
+    # -----------------------------------------------------------------------
+    cursor.execute("SELECT COUNT(*) FROM geo_locations")
+    if cursor.fetchone()[0] == 0:
+        try:
+            from api.bangladesh_geo_data import get_all_geo_records
+            geo_records = get_all_geo_records()
+            execute_batch(
+                cursor,
+                """
+                INSERT INTO geo_locations 
+                (name_bn, name_en, type, district_bn, district_en, division_bn, division_en, latitude, longitude)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                geo_records,
+            )
+            conn.commit()
+            print(f"✅ Seeded {len(geo_records)} Bangladesh districts and upazilas into geo_locations")
+        except Exception as e:
+            print(f"⚠️ Warning while seeding geo_locations: {e}")
 
     cursor.close()
     conn.close()
